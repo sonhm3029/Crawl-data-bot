@@ -1,5 +1,7 @@
 import os
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 import requests
 import base64
 import time
@@ -24,14 +26,16 @@ usr_agent = {
     'Connection': 'keep-alive',
 }
 
+# Use ChromeDriver with Selenium
+chrome_options = Options()
+chrome_options.add_argument('--headless')  # Run headless (without GUI)
+driver = webdriver.Chrome(options=chrome_options)
+
 def getBase64(img_data):
     head, data = img_data.split(",", 1)
     
     # Get the gile extension (gif, jpeg, png)
     file_ext = head.split(";")[0].split("/")[1]
-    
-    print(file_ext)
-    
     # Decode the image data
     plain_data = base64.b64decode(data)
     
@@ -47,42 +51,28 @@ def save_image(filename, data):
 
 
 def bs4_request(query, num_imgs=10, root_folder="./downloads"):
-    
     search_url = f"{GOOGLE_IMAGE}q={query}"
     print(f"Searching for {search_url}")
     
-    
-    res = requests.get(search_url, headers=usr_agent)
-    html = res.content
-    
-    soup = BeautifulSoup(html, 'html.parser')
+    # Use Selenium to get the dynamic content
+    driver.get(search_url)
+    dynamic_content = driver.page_source
 
-    results = soup.find_all('img', {'class': 'rg_i'})
+    # Close the Selenium-controlled browser
+    driver.quit()
+    soup = BeautifulSoup(dynamic_content, 'html.parser')
 
-    
+    results = soup.find_all('img', {'class': 'rg_i'}, limit=num_imgs)
+
     image_urls = [img.get('src') or img.get('data-src') for img in results]
-    print(f"Found {len(image_urls)} images")
     
     saved_folder = os.path.join(root_folder, secure_filename(query))
-    if not os.path.exists(saved_folder):
-        os.makedirs(saved_folder)
-    
-    print("Starting to download...")
-    count = 0
-    # Download and save images
-    for i, img_url in enumerate(tqdm(image_urls, desc='Downloading images', unit='image')):
-        try:
-            img_data = requests.get(img_url).content
-            with open(os.path.join(saved_folder, f"image_{i+1}_{generateUniquePrefix()}.jpg"), 'wb') as f:
-                f.write(img_data)
-            count +=1
-            if count == num_imgs:
-                break
-        except Exception as e:
-            # print(f"Error downloading image {i + 1}: {e}")
-            pass
-    print(f"Download sucess {count}/{len(image_urls)}")
-    
+    print(results)
+    # if not os.path.exists(saved_folder):
+    #     os.makedirs(saved_folder)
+    # else:
+    #     with open(os.path.join("saved_folder", "list_link.txt")) as f:
+            
 
 class ImageCrawlBase:
     
