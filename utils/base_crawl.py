@@ -3,8 +3,9 @@ from bs4 import BeautifulSoup
 import requests
 import base64
 import time
+from tqdm import tqdm 
 
-from unidecode import unidecode
+from .file import secure_filename, generateUniquePrefix
 
 
 
@@ -55,36 +56,32 @@ def bs4_request(query, num_imgs=10, root_folder="./downloads"):
     html = res.content
     
     soup = BeautifulSoup(html, 'html.parser')
-    results = soup.findAll('img', {'class': 'rg_i'}, limit=num_imgs)
+
+    results = soup.find_all('img', {'class': 'rg_i'})
+
     
+    image_urls = [img.get('src') or img.get('data-src') for img in results]
+    print(f"Found {len(image_urls)} images")
     
-    print(results)
-    img_links = []
+    saved_folder = os.path.join(root_folder, secure_filename(query))
+    if not os.path.exists(saved_folder):
+        os.makedirs(saved_folder)
     
-    for result in results:
-        base64Img = result["src"]
-        img_links.append(base64Img)
-        
-        with open('image_data.txt', 'w') as f:
-            for base64Img in img_links:
-                f.write(base64Img)
-        
-        print(f"Fount {len(img_links)} images")
-        print("Start downloading...")
-        
-        query_folder_name = "_".join(unidecode(query).split(" "))
-        SAVE_FOLDER = f"{root_folder}/{query_folder_name}_{int(time.time())}"
-        
-        print(SAVE_FOLDER)
-        if not os.path.exists(SAVE_FOLDER):
-            os.makedirs(SAVE_FOLDER)
-            
-        for i, imgString in enumerate(img_links):
-            img_data = getBase64(imgString)
-            
-            filename = f"{SAVE_FOLDER}/{query_folder_name}_{i+1}.jpg"
-            
-            save_image(filename, img_data)
+    print("Starting to download...")
+    count = 0
+    # Download and save images
+    for i, img_url in enumerate(tqdm(image_urls, desc='Downloading images', unit='image')):
+        try:
+            img_data = requests.get(img_url).content
+            with open(os.path.join(saved_folder, f"image_{i+1}_{generateUniquePrefix()}.jpg"), 'wb') as f:
+                f.write(img_data)
+            count +=1
+            if count == num_imgs:
+                break
+        except Exception as e:
+            # print(f"Error downloading image {i + 1}: {e}")
+            pass
+    print(f"Download sucess {count}/{len(image_urls)}")
     
 
 class ImageCrawlBase:
@@ -96,7 +93,7 @@ class ImageCrawlBase:
         
         for query in queries:        
             query_str = query.get("query_str")
-            limit = query.get("limit")
+            limit = query.get("limits")
             bs4_request(query_str, limit, root_folder)
             
     def craw_scheduler(self):
