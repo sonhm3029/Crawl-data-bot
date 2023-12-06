@@ -4,6 +4,7 @@ import requests
 import base64
 import time
 from tqdm import tqdm 
+import re
 
 from .file import secure_filename, generateUniquePrefix
 
@@ -57,10 +58,22 @@ def bs4_request(query, num_imgs=10, root_folder="./downloads"):
     
     soup = BeautifulSoup(html, 'html.parser')
 
-    results = soup.find_all('img', {'class': 'rg_i'})
-
+    results = soup.find_all('div', {'class': 'isv-r PNCib ViTmJb BUooTd'})
     
-    image_urls = [img.get('src') or img.get('data-src') for img in results]
+    image_urls = []
+    pattern_template =r'\[0,"{}",\["([^"]+)",\d+,\d+\],\["([^"]+)",\d+,\d+\]'
+    for elem in tqdm(results, desc="Extract link images", unit="elem"):
+        try:
+            data_tbnid = elem.get("data-tbnid")
+            pattern = pattern_template.format(re.escape(data_tbnid))
+            matches = re.findall(pattern, str(html))
+            for match in matches:
+                thumbnal_img = match[0]
+                full_res_img = match[1]
+                image_urls.append(full_res_img)
+        except Exception as e:
+            print(f"ERROR extract {elem.get('data-tbnid')}: {str(e)}")
+    
     print(f"Found {len(image_urls)} images")
     
     saved_folder = os.path.join(root_folder, secure_filename(query))
@@ -72,14 +85,14 @@ def bs4_request(query, num_imgs=10, root_folder="./downloads"):
     # Download and save images
     for i, img_url in enumerate(tqdm(image_urls, desc='Downloading images', unit='image')):
         try:
-            img_data = requests.get(img_url).content
+            img_data = requests.get(img_url, timeout=60).content
             with open(os.path.join(saved_folder, f"image_{i+1}_{generateUniquePrefix()}.jpg"), 'wb') as f:
                 f.write(img_data)
             count +=1
             if count == num_imgs:
                 break
         except Exception as e:
-            # print(f"Error downloading image {i + 1}: {e}")
+            print(f"Error downloading image {i + 1}: {e}")
             pass
     print(f"Download sucess {count}/{len(image_urls)}")
     
