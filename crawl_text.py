@@ -43,5 +43,20 @@ if __name__ == "__main__":
             "url": "https://www.vinmec.com/tin-tuc/thong-tin-suc-khoe/lam-dep/",
             "num_pages": 95,
             "category": "Làm đẹp"
+        },
+        {
+            "url": "https://www.vinmec.com/vi/tin-tuc/hoat-dong-dao-tao/tieu-hoa-gan-mat/",
+            "num_pages": 1,
+            "category": "Tiêu hóa gan mật"
+        },
+        {
+            "url": "https://www.vinmec.com/vi/tin-tuc/hoat-dong-dao-tao/san-phu-khoa-va-ho-tro-sinh-san/",
+            "num_pages": 1,
+            "category": "Sản phụ khoa và hỗ trợ sinh sản"
+        },
+        {
+            "url": "https://www.vinmec.com/vi/tin-tuc/hoi-dap-bac-si/",
+            "num_pages": 563,
+            "category": "Hỏi đáp bác sĩ"
         }
     ])         
