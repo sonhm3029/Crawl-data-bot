@@ -5,6 +5,8 @@ import base64
 import time
 from tqdm import tqdm 
 import re
+from pymongo import MongoClient
+from dotenv import load_dotenv
 
 from .file import secure_filename, generateUniquePrefix
 
@@ -24,6 +26,7 @@ usr_agent = {
     'Accept-Language': 'en-US,en;q=0.8',
     'Connection': 'keep-alive',
 }
+load_dotenv()
 
 def getBase64(img_data):
     head, data = img_data.split(",", 1)
@@ -115,10 +118,85 @@ class ImageCrawlBase:
     
 class TextCrawlBase:
     def __init__(self):
-        pass
+        self.db = self.connect_db()
+        
+    def connect_db(self):
+        try:
+            mongoclient = MongoClient(os.environ["DB_URL"])
+            db = mongoclient["crawl"]
+            
+            return db
+        except Exception as e:
+            print("ERROR connect database: ", str(e))
     
-    def craw(self, queries = [], sources = [], root_folder=None):
-        pass
+    def crawl_url(self, source, summary, title, category):
+        try:
+            
+            exist_data = self.db["medical"].find({"url": source})
+            if len(list(exist_data)):
+                print(f"Exist crawl data from url {source}")
+                return
+            
+            res = requests.get(source, headers=usr_agent)
+            html = res.content
+            
+            soup = BeautifulSoup(html, 'html.parser')
+
+            results = soup.find_all('div', {'class': 'streamfield'})
+            collection = self.db["medical"]
+
+            insert_data = []
+            for result in results:
+                insert_data.append({
+                    "text": str(result),
+                    "url": source,
+                    "title": title,
+                    "summary": summary,
+                    "category": category
+                })
+            
+            insert_res = collection.insert_many(insert_data)
+            
+        except Exception as e:
+            print(f"\nERROR crawl data url: {source} - ", str(e))
+            
+            
+    def crawl(self, sources=[]):
+        try:
+            ROOT_URL = "https://www.vinmec.com/vi"
+            for source in tqdm(sources, desc="Extracting from source"):
+                num_page = source.get("num_pages")
+                url = source.get("url")
+                category = source.get("category")
+                print(f"Start crawling from  {url}...")
+                for page in tqdm(range(1, num_page + 1), desc="Crawl page", unit="page"):
+                    url_with_page = f"{url}?page={page}"
+                    page_html = requests.get(url_with_page, headers=usr_agent)
+                    page_html = page_html.content
+                    
+                    soup = BeautifulSoup(page_html, 'html.parser')
+                    # Find the ul tag inside the post_list_div
+                    ul_tag = soup.select_one("div.post-list ul")
+                    li_tags = ul_tag.find_all("li")
+
+                    for li in li_tags:
+                        a_tag = li.find("a")
+                        post_content = li.find("div", {"class": "post-content"})
+                        title = ""
+                        summary = ""
+                        if post_content:
+                            title = post_content.find("h2").find("a")
+                            if title:
+                                title = title.get_text(strip=True)
+                            summary = post_content.get_text(strip=True)
+                            
+                        if a_tag and a_tag.get("href"):
+                            self.crawl_url(f"{ROOT_URL}{a_tag.get('href')}", summary, title, category)
+                    
+        except Exception as e:
+            print(f"\nERROR crawl data - ", str(e))
+        
+        
     
     def craw_scheduler(self):
         pass
