@@ -2,23 +2,23 @@ from utils.base_crawl import TextCrawlBase
 
 
 if __name__ == "__main__":
-    crawler = TextCrawlBase()
+    crawler = TextCrawlBase(is_multi_process=True)
     crawler.crawl([
-        {
-            "url": "https://www.vinmec.com/vi/tin-tuc/thong-tin-suc-khoe/thong-tin-duoc/",
-            "num_pages": 5,
-            "category": "Thông tin dược"
-        },
-        {
-            "url": "https://www.vinmec.com/vi/tin-tuc/thong-tin-suc-khoe/san-phu-khoa-va-ho-tro-sinh-san/",
-            "num_pages": 337,
-            "category": "Sản phụ khoa và hỗ trợ sinh sản"
-        },
-        {
-            "url": "https://www.vinmec.com/vi/tin-tuc/thong-tin-suc-khoe/nhi/",
-            "num_pages": 410,
-            "category": "Nhi"
-        },
+        # {
+        #     "url": "https://www.vinmec.com/vi/tin-tuc/thong-tin-suc-khoe/thong-tin-duoc/",
+        #     "num_pages": 5,
+        #     "category": "Thông tin dược"
+        # },
+        # {
+        #     "url": "https://www.vinmec.com/vi/tin-tuc/thong-tin-suc-khoe/san-phu-khoa-va-ho-tro-sinh-san/",
+        #     "num_pages": 337,
+        #     "category": "Sản phụ khoa và hỗ trợ sinh sản"
+        # },
+        # {
+        #     "url": "https://www.vinmec.com/vi/tin-tuc/thong-tin-suc-khoe/nhi/",
+        #     "num_pages": 410,
+        #     "category": "Nhi"
+        # },
         {
             "url": "https://www.vinmec.com/vi/tin-tuc/thong-tin-suc-khoe/suc-khoe-tong-quat/",
             "num_pages": 934,
